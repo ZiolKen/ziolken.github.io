@@ -3,6 +3,7 @@
   const SPAWN_INTERVAL_MS = 10;
   const MAX_ON_SCREEN = 150;
   const BOTTOM_FADE_ZONE = 140;
+  const Z_INDEX = 999999;
 
   const rand = (min, max) => Math.random() * (max - min) + min;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -13,17 +14,27 @@
       const el = document.createElement("div");
       el.id = "snow-screen";
       el.setAttribute("aria-hidden", "true");
-      document.documentElement.appendChild(el);
+      (document.body || document.documentElement).appendChild(el);
       return el;
     })();
 
-  layer.setAttribute("aria-hidden", "true");
+  Object.assign(layer.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100vw",
+    height: "100vh",
+    pointerEvents: "none",
+    overflow: "hidden",
+    zIndex: String(Z_INDEX),
+  });
 
   const active = new Set();
-  let running = true;
   let lastSpawn = performance.now();
+  let running = true;
 
   function kill(item) {
+    if (item.dead) return;
     item.dead = true;
     item.el.remove();
     active.delete(item);
@@ -85,19 +96,21 @@
 
     active.add(item);
 
-    setTimeout(() => {
-      if (!item.dead) kill(item);
-    }, Math.ceil(item.lifetimeCap * 1000) + 800);
+    const vh = window.innerHeight || 0;
+    const timeToBottom = (vh + 60 - startY) / fallSpeed;
+    const ttl = Math.max(lifetimeCap, timeToBottom);
+
+    setTimeout(() => kill(item), Math.ceil(ttl * 1000) + 800);
   }
 
-  function frame(now) {
+  function animate(now) {
     const vh = window.innerHeight;
     const vw = window.innerWidth;
 
     if (running) {
       const delta = now - lastSpawn;
       if (delta >= SPAWN_INTERVAL_MS) {
-        const n = Math.min(60, Math.floor(delta / SPAWN_INTERVAL_MS));
+        const n = Math.min(120, Math.floor(delta / SPAWN_INTERVAL_MS));
         for (let i = 0; i < n; i++) spawnSnowflake(rand(0, vw), -20);
         lastSpawn += n * SPAWN_INTERVAL_MS;
       }
@@ -130,18 +143,10 @@
       if (y > vh + 40 || op <= 0.02) kill(item);
     }
 
-    requestAnimationFrame(frame);
+    requestAnimationFrame(animate);
   }
 
-  const mql = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-  const reduced = !!mql?.matches;
-  if (reduced) running = false;
-
-  mql?.addEventListener?.("change", (e) => {
-    running = !e.matches;
-  });
-
-  requestAnimationFrame(frame);
+  requestAnimationFrame(animate);
 
   window.__snowScreen = {
     start() {
