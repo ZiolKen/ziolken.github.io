@@ -1,8 +1,8 @@
 (() => {
   const EMOJI = "❄️";
-  const SPAWN_INTERVAL_MS = 1000;
-  const MAX_ON_SCREEN = 100;
-  const BOTTOM_FADE_ZONE = 100;
+  const SPAWN_INTERVAL_MS = 500;
+  const MAX_ON_SCREEN = 50;
+  const BOTTOM_FADE_ZONE = 50;
   const Z_INDEX = 999999;
 
   const rand = (min, max) => Math.random() * (max - min) + min;
