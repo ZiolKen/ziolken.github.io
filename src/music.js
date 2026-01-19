@@ -1,92 +1,154 @@
 (() => {
-  const elCard = document.getElementById("music-card");
+  const $ = (id) => document.getElementById(id);
+
+  const elCard = $("music-card");
   if (!elCard) return;
 
-  const elAudio = document.getElementById("music-audio");
-  const elCover = document.getElementById("music-cover-img");
-  const elTitle = document.getElementById("music-title");
-  const elArtist = document.getElementById("music-artist");
-  const elPrev = document.getElementById("music-prev");
-  const elNext = document.getElementById("music-next");
-  const elPlay = document.getElementById("music-play");
-  const elMute = document.getElementById("music-mute");
-  const elProgress = document.getElementById("music-progress");
-  const elFill = document.getElementById("music-progress-fill");
-  const elKnob = document.getElementById("music-progress-knob");
+  const elAudio = $("music-audio");
+  const elCover = $("music-cover-img");
+  const elTitle = $("music-title");
+  const elArtist = $("music-artist");
+  const elPrev = $("music-prev");
+  const elNext = $("music-next");
+  const elPlay = $("music-play");
+  const elMute = $("music-mute");
+  const elProgress = $("music-progress");
+  const elFill = $("music-progress-fill");
+  const elKnob = $("music-progress-knob");
+
+  if (
+    !elAudio ||
+    !elCover ||
+    !elTitle ||
+    !elArtist ||
+    !elPrev ||
+    !elNext ||
+    !elPlay ||
+    !elMute ||
+    !elProgress ||
+    !elFill ||
+    !elKnob
+  ) {
+    return;
+  }
+
   const bars = Array.from(elMute.querySelectorAll(".mvb"));
 
   const tracks = [
     { title: "Bloody Moon", artist: "Unknown", src: "assets/bloody_moon.mp3", cover: "res/music.png" },
   ];
 
-  let idx = 0;
-  let dragging = false;
-  let ctx = null;
-  let analyser = null;
-  let data = null;
-  let raf = 0;
-  let wired = false;
+  const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+  const state = {
+    idx: 0,
+    dragging: false,
+    dragRatio: 0,
+    pendingSeekRatio: null,
+    ctx: null,
+    analyser: null,
+    data: null,
+    wired: false,
+    vizRaf: 0,
+  };
 
   elAudio.preload = "metadata";
   elAudio.playsInline = true;
   elAudio.setAttribute("playsinline", "");
+  if (!elAudio.crossOrigin) elAudio.crossOrigin = "anonymous";
 
-  const load = (i) => {
-    idx = (i + tracks.length) % tracks.length;
-    const t = tracks[idx];
-    elTitle.textContent = t.title || "";
-    elArtist.textContent = t.artist || "";
-    elCover.src = t.cover || "";
-    elAudio.src = t.src || "";
-    elFill.style.width = "0%";
-    elKnob.style.left = "0%";
+  if (!elProgress.style.touchAction) elProgress.style.touchAction = "none";
+  if (!elProgress.hasAttribute("tabindex")) elProgress.tabIndex = 0;
+
+  const getDuration = () => {
+    const d = elAudio.duration;
+    if (Number.isFinite(d) && d > 0) return d;
+
+    const s = elAudio.seekable;
+    if (s && s.length) {
+      const end = s.end(s.length - 1);
+      if (Number.isFinite(end) && end > 0) return end;
+    }
+    return 0;
+  };
+
+  const renderProgress = (ratio) => {
+    const pct = clamp01(ratio) * 100;
+    elFill.style.width = `${pct}%`;
+    elKnob.style.left = `${pct}%`;
+  };
+
+  const ratioFromPointer = (e) => {
+    const rect = elProgress.getBoundingClientRect();
+    const w = rect.width || 1;
+    const x = (e.clientX ?? 0) - rect.left;
+    return clamp01(x / w);
   };
 
   const ensureAudioGraph = () => {
-    if (wired) return;
-    ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const src = ctx.createMediaElementSource(elAudio);
-    analyser = ctx.createAnalyser();
-    analyser.fftSize = 256;
-    data = new Uint8Array(analyser.frequencyBinCount);
-    src.connect(analyser);
-    analyser.connect(ctx.destination);
-    wired = true;
+    if (state.wired) return;
+
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) {
+      state.wired = true;
+      return;
+    }
+
+    try {
+      const ctx = new Ctx();
+      const src = ctx.createMediaElementSource(elAudio);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+
+      state.ctx = ctx;
+      state.analyser = analyser;
+      state.data = new Uint8Array(analyser.frequencyBinCount);
+
+      src.connect(analyser);
+      analyser.connect(ctx.destination);
+    } catch {
+      state.ctx = null;
+      state.analyser = null;
+      state.data = null;
+    } finally {
+      state.wired = true;
+    }
   };
 
-  const setProgressByRatio = (r) => {
-    const ratio = Math.min(1, Math.max(0, r));
-    const dur = elAudio.duration || 0;
-    if (dur > 0) elAudio.currentTime = dur * ratio;
-    const pct = ratio * 100;
-    elFill.style.width = `${pct}%`;
-    elKnob.style.left = `${pct}%`;
+  const unlockAudio = () => {
+    ensureAudioGraph();
+    if (state.ctx && state.ctx.state === "suspended") {
+      state.ctx.resume().catch(() => {});
+    }
   };
 
-  const pointerRatio = (e) => {
-    const rect = elProgress.getBoundingClientRect();
-    const x = (e.clientX ?? (e.touches && e.touches[0] && e.touches[0].clientX) ?? 0) - rect.left;
-    return x / rect.width;
+  const play = () => {
+    unlockAudio();
+
+    const p = elAudio.play();
+    if (p && typeof p.catch === "function") return p.catch(() => {});
+    return Promise.resolve();
   };
 
-  const syncProgress = () => {
-    if (dragging) return;
-    const dur = elAudio.duration || 0;
-    const cur = elAudio.currentTime || 0;
-    const ratio = dur > 0 ? cur / dur : 0;
-    const pct = ratio * 100;
-    elFill.style.width = `${pct}%`;
-    elKnob.style.left = `${pct}%`;
+  const pause = () => {
+    try {
+      elAudio.pause();
+    } catch {}
   };
+
+  const toggle = () => (elAudio.paused ? play() : (pause(), Promise.resolve()));
 
   const stopViz = () => {
-    if (raf) cancelAnimationFrame(raf);
-    raf = 0;
-    bars.forEach((b) => (b.style.height = "10px"));
+    if (state.vizRaf) cancelAnimationFrame(state.vizRaf);
+    state.vizRaf = 0;
+    for (const b of bars) b.style.height = "10px";
   };
 
-  const viz = () => {
-    if (!analyser || !data) return;
+  const stepViz = () => {
+    const analyser = state.analyser;
+    const data = state.data;
+    if (!analyser || !data || !bars.length) return;
+
     analyser.getByteFrequencyData(data);
 
     const n = data.length;
@@ -95,84 +157,146 @@
     const minH = 8;
 
     for (let i = 0; i < bars.length; i++) {
-      const v = data[picks[i]] / 255;
+      const v = data[picks[i % picks.length]] / 255;
       const h = Math.round(minH + v * (maxH - minH));
       bars[i].style.height = `${h}px`;
     }
 
-    raf = requestAnimationFrame(viz);
+    state.vizRaf = requestAnimationFrame(stepViz);
   };
 
-  const play = async () => {
-    ensureAudioGraph();
-    if (ctx && ctx.state === "suspended") await ctx.resume();
-    await elAudio.play();
+  const startViz = () => {
+    stopViz();
+    if (!state.analyser || !state.data || !bars.length) return;
+    state.vizRaf = requestAnimationFrame(stepViz);
   };
 
-  const pause = () => elAudio.pause();
+  const syncProgressFromAudio = () => {
+    if (state.dragging) return;
+    const dur = getDuration();
+    const cur = elAudio.currentTime || 0;
+    renderProgress(dur > 0 ? cur / dur : 0);
+  };
 
-  const playIndex = async (i) => {
-    if (Number.isFinite(i)) {
-      const wasPlaying = !elAudio.paused;
-      load(i);
-      if (wasPlaying) await play();
-      else await play();
+  const commitSeek = (ratio) => {
+    const dur = getDuration();
+    if (!dur) {
+      state.pendingSeekRatio = ratio;
       return;
     }
-    await play();
+
+    state.pendingSeekRatio = null;
+    const t = clamp01(ratio) * dur;
+
+    try {
+      elAudio.currentTime = t;
+    } catch {}
   };
 
-  const toggle = async () => {
-    if (elAudio.paused) await play();
-    else pause();
+  const load = (i) => {
+    state.idx = (i + tracks.length) % tracks.length;
+    const t = tracks[state.idx] || {};
+
+    elTitle.textContent = t.title || "Unknown";
+    elArtist.textContent = t.artist || "Unknown";
+    elCover.src = t.cover || "";
+    elAudio.src = t.src || "";
+
+    renderProgress(0);
+
+    try {
+      elAudio.load();
+    } catch {}
   };
 
-  elPrev.addEventListener("click", async () => {
+  const playIndex = (i) => {
+    if (Number.isFinite(i)) load(i);
+    return play();
+  };
+
+  const onDragStart = (e) => {
+    if (e.button != null && e.button !== 0) return;
+
+    unlockAudio();
+    state.dragging = true;
+    state.dragRatio = ratioFromPointer(e);
+    renderProgress(state.dragRatio);
+
+    if (typeof elProgress.setPointerCapture === "function") {
+      try {
+        elProgress.setPointerCapture(e.pointerId);
+      } catch {}
+    }
+  };
+
+  const onDragMove = (e) => {
+    if (!state.dragging) return;
+    state.dragRatio = ratioFromPointer(e);
+    renderProgress(state.dragRatio);
+  };
+
+  const onDragEnd = (e) => {
+    if (!state.dragging) return;
+
+    state.dragging = false;
+
+    if (typeof elProgress.releasePointerCapture === "function") {
+      try {
+        elProgress.releasePointerCapture(e.pointerId);
+      } catch {}
+    }
+
+    commitSeek(state.dragRatio);
+    syncProgressFromAudio();
+  };
+
+  elPrev.addEventListener("click", () => {
     const wasPlaying = !elAudio.paused;
-    load(idx - 1);
-    if (wasPlaying) await play();
+    load(state.idx - 1);
+    if (wasPlaying) void play();
   });
 
-  elNext.addEventListener("click", async () => {
+  elNext.addEventListener("click", () => {
     const wasPlaying = !elAudio.paused;
-    load(idx + 1);
-    if (wasPlaying) await play();
+    load(state.idx + 1);
+    if (wasPlaying) void play();
   });
 
-  elPlay.addEventListener("click", toggle);
+  elPlay.addEventListener("click", () => {
+    void toggle();
+  });
 
   elMute.addEventListener("click", () => {
     elAudio.muted = !elAudio.muted;
     elCard.classList.toggle("is-muted", elAudio.muted);
   });
 
-  elProgress.addEventListener("pointerdown", (e) => {
-    dragging = true;
-    elProgress.setPointerCapture(e.pointerId);
-    setProgressByRatio(pointerRatio(e));
-  });
-
-  elProgress.addEventListener("pointermove", (e) => {
-    if (!dragging) return;
-    setProgressByRatio(pointerRatio(e));
-  });
-
-  elProgress.addEventListener("pointerup", () => {
-    dragging = false;
-  });
+  elProgress.addEventListener("pointerdown", onDragStart);
+  elProgress.addEventListener("pointermove", onDragMove);
+  elProgress.addEventListener("pointerup", onDragEnd);
+  elProgress.addEventListener("pointercancel", onDragEnd);
+  elProgress.addEventListener("lostpointercapture", onDragEnd);
 
   elProgress.addEventListener("keydown", (e) => {
-    const dur = elAudio.duration || 0;
+    const dur = getDuration();
     if (!dur) return;
-    if (e.key === "ArrowLeft") elAudio.currentTime = Math.max(0, elAudio.currentTime - 5);
-    if (e.key === "ArrowRight") elAudio.currentTime = Math.min(dur, elAudio.currentTime + 5);
+
+    if (e.key === "ArrowLeft") elAudio.currentTime = Math.max(0, (elAudio.currentTime || 0) - 5);
+    if (e.key === "ArrowRight") elAudio.currentTime = Math.min(dur, (elAudio.currentTime || 0) + 5);
   });
 
-  elAudio.addEventListener("timeupdate", syncProgress);
+  elAudio.addEventListener("loadedmetadata", () => {
+    if (state.pendingSeekRatio != null) commitSeek(state.pendingSeekRatio);
+    syncProgressFromAudio();
+  });
+
+  elAudio.addEventListener("durationchange", syncProgressFromAudio);
+  elAudio.addEventListener("timeupdate", syncProgressFromAudio);
+  elAudio.addEventListener("seeked", syncProgressFromAudio);
 
   elAudio.addEventListener("play", () => {
     elCard.classList.add("is-playing");
-    viz();
+    startViz();
   });
 
   elAudio.addEventListener("pause", () => {
@@ -180,21 +304,18 @@
     stopViz();
   });
 
-  elAudio.addEventListener("ended", async () => {
-    load(idx + 1);
-    await play();
+  elAudio.addEventListener("ended", () => {
+    load(state.idx + 1);
+    void play();
   });
 
   load(0);
 
-  if (!elTitle.textContent) elTitle.textContent = "Unknown";
-  if (!elArtist.textContent) elArtist.textContent = "Unknown";
-
   window.__ziolkenMusic = {
     tracks,
-    getIndex: () => idx,
+    getIndex: () => state.idx,
     setIndex: (i) => load(i),
-    play: async (i) => (Number.isFinite(i) ? playIndex(i) : play()),
+    play: (i) => playIndex(i),
     pause: () => pause(),
     toggle: () => toggle(),
     audio: elAudio,
