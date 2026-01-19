@@ -61,7 +61,7 @@ html {
 
 html {
   scrollbar-width: thin;
-  background: url(res/bg.png);
+  background: linear-gradient(135deg, rgb(6, 6, 17), rgb(1, 1, 14));
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
