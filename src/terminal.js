@@ -1334,7 +1334,7 @@
 
     setTheme(getTheme());
 
-    term.println("Type 'help' to see commands. curl/ping/dig/rdap/sha256/base64/jwt/passgen", "term-muted");
+    term.println("Type 'help' to see commands.", "term-muted");
 
     term.onCommand = async (raw, ctx) => {
       const tokens = tokenize(raw);
