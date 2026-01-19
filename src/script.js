@@ -223,7 +223,7 @@
       `;
     };
 
-    const enableMarquee = (container, { speed = 32, idleMs = 900, copies = 3 } = {}) => {
+    const enableMarquee = (container, { speed = 32, copies = 3 } = {}) => {
       if (!container) return () => {};
       container.classList.add("projects-marquee");
     
@@ -236,28 +236,29 @@
       const track = document.createElement("div");
       track.className = "projects-track";
     
-      const frag = document.createDocumentFragment();
       const c = Math.max(3, copies | 0);
+      const frag = document.createDocumentFragment();
       for (let i = 0; i < c; i++) for (const card of cards) frag.appendChild(card.cloneNode(true));
       track.appendChild(frag);
-    
       container.replaceChildren(track);
     
       let raf = 0;
       let ro = null;
       let io = null;
     
+      let ioActive = true;
       let segment = 0;
+    
       let pos = 0;
       let last = performance.now();
     
-      let userHolding = false;
-      let lastUser = 0;
-    
-      let ioActive = true;
+      let hoveringCard = false;
+      let touchingCard = false;
     
       let scrollRaf = 0;
       let lastProgrammatic = 0;
+    
+      const isCard = (el) => !!(el && el.closest && el.closest(".project-card"));
     
       const setPos = (p) => {
         if (!segment) return;
@@ -273,15 +274,16 @@
         lastProgrammatic = performance.now();
         container.scrollLeft = base;
     
-        if (frac) track.style.transform = `translate3d(${-frac}px,0,0)`;
-        else track.style.transform = "translate3d(0,0,0)";
+        track.style.transform = frac ? `translate3d(${-frac}px,0,0)` : "translate3d(0,0,0)";
       };
     
       const measure = () => {
         const total = track.scrollWidth;
         const next = total / c;
         if (!Number.isFinite(next) || next <= 1) return;
+    
         segment = next;
+    
         if (!pos) {
           pos = segment;
           setPos(pos);
@@ -290,40 +292,86 @@
         }
       };
     
-      const onUser = () => {
-        lastUser = performance.now();
-        if (track.style.transform) track.style.transform = "translate3d(0,0,0)";
+      const syncFromScroll = () => {
+        track.style.transform = "translate3d(0,0,0)";
         pos = container.scrollLeft;
+        if (segment) setPos(pos);
       };
     
       const onScroll = () => {
         const now = performance.now();
         if (now - lastProgrammatic < 40) return;
     
-        onUser();
-    
         if (scrollRaf) cancelAnimationFrame(scrollRaf);
         scrollRaf = requestAnimationFrame(() => {
           if (!segment) measure();
           if (!segment) return;
-          setPos(container.scrollLeft);
+          syncFromScroll();
         });
       };
     
-      const onDown = () => {
-        userHolding = true;
-        onUser();
+      const pause = () => {
+        track.style.transform = "translate3d(0,0,0)";
+        pos = container.scrollLeft;
+        last = performance.now();
       };
     
-      const onUp = () => {
-        userHolding = false;
-        onUser();
+      const resume = () => {
+        pos = container.scrollLeft;
         last = performance.now();
+      };
+    
+      const onPointerOver = (e) => {
+        if (e.pointerType === "touch") return;
+        if (!hoveringCard && isCard(e.target)) {
+          hoveringCard = true;
+          pause();
+        }
+      };
+    
+      const onPointerOut = (e) => {
+        if (e.pointerType === "touch") return;
+        if (!hoveringCard) return;
+    
+        const leavingCard = isCard(e.target);
+        const stillInCard = isCard(e.relatedTarget);
+        if (leavingCard && !stillInCard) {
+          hoveringCard = false;
+          resume();
+        }
+      };
+    
+      const onFocusIn = (e) => {
+        if (!hoveringCard && isCard(e.target)) {
+          hoveringCard = true;
+          pause();
+        }
+      };
+    
+      const onFocusOut = (e) => {
+        if (!hoveringCard) return;
+        if (!isCard(e.relatedTarget)) {
+          hoveringCard = false;
+          resume();
+        }
+      };
+    
+      const onTouchStart = (e) => {
+        if (isCard(e.target)) {
+          touchingCard = true;
+          pause();
+        }
+      };
+    
+      const onTouchEnd = () => {
+        if (touchingCard) {
+          touchingCard = false;
+          resume();
+        }
       };
     
       const onVis = () => {
         last = performance.now();
-        onUser();
         if (!document.hidden) {
           measure();
           if (segment) setPos(pos || segment);
@@ -336,8 +384,8 @@
     
         if (!segment) measure();
     
-        const idle = now - lastUser > idleMs;
-        const autoAllowed = ioActive && !userHolding && idle && autoSpeed > 0 && segment > 1;
+        const paused = hoveringCard || touchingCard;
+        const autoAllowed = ioActive && !paused && autoSpeed > 0 && segment > 1;
     
         if (autoAllowed) setPos(pos + (autoSpeed * dt) / 1000);
     
@@ -345,17 +393,13 @@
       };
     
       container.addEventListener("scroll", onScroll, { passive: true });
-      container.addEventListener("wheel", onUser, { passive: true });
-      container.addEventListener("touchstart", onDown, { passive: true });
-      container.addEventListener("touchend", onUp, { passive: true });
-      container.addEventListener("touchcancel", onUp, { passive: true });
-      container.addEventListener("pointerdown", onDown, { passive: true });
-      window.addEventListener("pointerup", onUp, { passive: true });
-      window.addEventListener("pointercancel", onUp, { passive: true });
-      container.addEventListener("mouseenter", onDown, { passive: true });
-      container.addEventListener("mouseleave", onUp, { passive: true });
-      container.addEventListener("focusin", onDown, { passive: true });
-      container.addEventListener("focusout", onUp, { passive: true });
+      container.addEventListener("pointerover", onPointerOver, { passive: true });
+      container.addEventListener("pointerout", onPointerOut, { passive: true });
+      container.addEventListener("focusin", onFocusIn, { passive: true });
+      container.addEventListener("focusout", onFocusOut, { passive: true });
+      container.addEventListener("touchstart", onTouchStart, { passive: true });
+      container.addEventListener("touchend", onTouchEnd, { passive: true });
+      container.addEventListener("touchcancel", onTouchEnd, { passive: true });
       document.addEventListener("visibilitychange", onVis);
     
       if (window.ResizeObserver) {
@@ -396,21 +440,17 @@
         io && io.disconnect();
     
         container.removeEventListener("scroll", onScroll);
-        container.removeEventListener("wheel", onUser);
-        container.removeEventListener("touchstart", onDown);
-        container.removeEventListener("touchend", onUp);
-        container.removeEventListener("touchcancel", onUp);
-        container.removeEventListener("pointerdown", onDown);
-        window.removeEventListener("pointerup", onUp);
-        window.removeEventListener("pointercancel", onUp);
-        container.removeEventListener("mouseenter", onDown);
-        container.removeEventListener("mouseleave", onUp);
-        container.removeEventListener("focusin", onDown);
-        container.removeEventListener("focusout", onUp);
+        container.removeEventListener("pointerover", onPointerOver);
+        container.removeEventListener("pointerout", onPointerOut);
+        container.removeEventListener("focusin", onFocusIn);
+        container.removeEventListener("focusout", onFocusOut);
+        container.removeEventListener("touchstart", onTouchStart);
+        container.removeEventListener("touchend", onTouchEnd);
+        container.removeEventListener("touchcancel", onTouchEnd);
         document.removeEventListener("visibilitychange", onVis);
       };
     };
-
+    
     const fetchRepos = async ({ force = false, signal } = {}) => {
       const cached = readCache();
 
