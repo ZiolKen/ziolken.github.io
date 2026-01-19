@@ -1,58 +1,90 @@
 (() => {
-  const TITLES = ["@ziolken ~ portfolio", "root@ziolken $ about", ">_ print('Hello World')"];
+  "use strict";
 
-  const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const TITLES = ["@ziolken ~ portfolio", "root@ziolken $ about", ">_ print('Hello World')"];
+  const CURSOR = "▌";
+  const BLANK = "\u00A0";
+
+  const randInt = (min, max) => (Math.random() * (max - min + 1) + min) | 0;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   let lastIdx = -1;
-  function pickRandomTitle() {
-    let idx;
+  const pickRandomTitle = () => {
+    let idx = 0;
     do idx = randInt(0, TITLES.length - 1);
     while (TITLES.length > 1 && idx === lastIdx);
     lastIdx = idx;
     return TITLES[idx];
-  }
-
-  const CURSOR = "▌";
-  let cursorOn = true;
-  setInterval(() => (cursorOn = !cursorOn), 450);
-
-  const BLANK = "\u00A0";
-
-  const setTitle = (text) => {
-    const safe = text.length ? text : BLANK;
-    document.title = safe + (cursorOn ? CURSOR : "");
   };
 
-  function typeIn(text, done) {
-    let i = 0;
-    const tick = () => {
-      setTitle(text.slice(0, i));
-      i++;
-      if (i <= text.length) setTimeout(tick, randInt(60, 140));
-      else done?.();
+  const titleState = { text: "", cursorOn: true };
+  const renderTitle = () => {
+    document.title = (titleState.text && titleState.text.length ? titleState.text : BLANK) + (titleState.cursorOn ? CURSOR : "");
+  };
+
+  setInterval(() => {
+    titleState.cursorOn = !titleState.cursorOn;
+    renderTitle();
+  }, 450);
+
+  const typeIn = async (text) => {
+    for (let i = 0; i <= text.length; i++) {
+      titleState.text = text.slice(0, i);
+      renderTitle();
+      await sleep(randInt(60, 140));
+    }
+  };
+
+  const deleteOut = async (current) => {
+    for (let i = current.length; i >= 0; i--) {
+      titleState.text = current.slice(0, i);
+      renderTitle();
+      await sleep(randInt(40, 90));
+    }
+  };
+
+  (async () => {
+    let current = "";
+    while (true) {
+      const next = pickRandomTitle();
+      if (current) {
+        await deleteOut(current);
+        await sleep(200);
+      }
+      await typeIn(next);
+      current = next;
+      await sleep(1200);
+    }
+  })().catch(() => {});
+
+  const injectRuntimeCss = (() => {
+    let done = false;
+    return () => {
+      if (done) return;
+      done = true;
+      const style = document.createElement("style");
+      style.id = "ziolken-runtime-css";
+      style.textContent = `
+#projects-grid.projects-marquee{
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+  touch-action:pan-x;
+  scrollbar-width:none;
+}
+#projects-grid.projects-marquee::-webkit-scrollbar{display:none}
+.projects-track{
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:stretch;
+  width:max-content;
+}
+.projects-track>.project-card{flex:0 0 auto}
+      `.trim();
+      document.head.appendChild(style);
     };
-    tick();
-  }
-
-  function deleteOut(current, done) {
-    let i = current.length;
-    const tick = () => {
-      setTitle(current.slice(0, i));
-      i--;
-      if (i >= 0) setTimeout(tick, randInt(40, 90));
-      else done?.();
-    };
-    tick();
-  }
-
-  function loop(currentText = "") {
-    const next = pickRandomTitle();
-    const startTyping = () => typeIn(next, () => setTimeout(() => loop(next), 1200));
-    if (currentText && currentText.length) deleteOut(currentText, () => setTimeout(startTyping, 200));
-    else startTyping();
-  }
-
-  loop("");
+  })();
 
   const $ = (s, r = document) => r.querySelector(s);
   const projectsGrid = $("#projects-grid");
@@ -60,21 +92,37 @@
   const FeaturedProjects = (() => {
     if (!projectsGrid) return null;
 
+    injectRuntimeCss();
+
     const owner = "ZiolKen";
     const apiUrl = `https://api.github.com/users/${owner}/repos?per_page=100&sort=updated`;
-    const cacheKey = `gh_deployed_${owner}_v1`;
+    const cacheKey = `gh_deployed_${owner}_v2`;
     const cacheTtlMs = 10 * 60 * 1000;
 
     let destroyMarquee = null;
     let clickBound = false;
+    let inflight = null;
+    let renderAbort = null;
+
+    const safeStorage = (() => {
+      try {
+        const k = "__t__";
+        localStorage.setItem(k, "1");
+        localStorage.removeItem(k);
+        return localStorage;
+      } catch {
+        return null;
+      }
+    })();
 
     const escapeHtml = (s) =>
-      String(s ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
+      String(s ?? "").replace(/[&<>"']/g, (c) => {
+        if (c === "&") return "&amp;";
+        if (c === "<") return "&lt;";
+        if (c === ">") return "&gt;";
+        if (c === '"') return "&quot;";
+        return "&#39;";
+      });
 
     const formatNum = (n) => {
       const x = Number(n) || 0;
@@ -84,21 +132,24 @@
     };
 
     const readCache = () => {
+      if (!safeStorage) return null;
       try {
-        const raw = localStorage.getItem(cacheKey);
+        const raw = safeStorage.getItem(cacheKey);
         if (!raw) return null;
         const parsed = JSON.parse(raw);
-        if (!parsed?.ts || !Array.isArray(parsed?.data)) return null;
-        if (Date.now() - parsed.ts > cacheTtlMs) return null;
-        return parsed.data;
+        if (!parsed || !Array.isArray(parsed.data)) return null;
+        const ts = Number(parsed.ts) || 0;
+        const etag = typeof parsed.etag === "string" ? parsed.etag : "";
+        return { ts, etag, data: parsed.data };
       } catch {
         return null;
       }
     };
 
-    const writeCache = (data) => {
+    const writeCache = (payload) => {
+      if (!safeStorage) return;
       try {
-        localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+        safeStorage.setItem(cacheKey, JSON.stringify(payload));
       } catch {}
     };
 
@@ -114,87 +165,21 @@
       return "";
     };
 
-    const enableMarquee = (container, { speed = 32 } = {}) => {
-      if (!container) return () => {};
-      container.classList.add("projects-marquee");
+    const setLoading = () => {
+      projectsGrid.innerHTML = `
+        <div class="project-card skeleton" style="width:250px; height:170px;"></div>
+        <div class="project-card skeleton" style="width:250px; height:170px;"></div>
+        <div class="project-card skeleton" style="width:250px; height:170px;"></div>
+      `;
+    };
 
-      const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reduce) {
-        container.style.overflowX = "auto";
-        container.style.webkitOverflowScrolling = "touch";
-        return () => {};
-      }
-
-      const cards = [...container.querySelectorAll(".project-card")];
-      if (cards.length <= 1) return () => {};
-
-      const html = cards.map((c) => c.outerHTML).join("");
-      const track = document.createElement("div");
-      track.className = "projects-track";
-      track.innerHTML = html + html;
-
-      container.innerHTML = "";
-      container.appendChild(track);
-
-      let raf = 0;
-      let paused = false;
-      let x = 0;
-      let last = performance.now();
-      let half = 1;
-
-      const measure = () => {
-        const total = track.scrollWidth;
-        half = Math.max(1, total / 2);
-        x = x % half;
-        track.style.transform = `translate3d(${-x}px,0,0)`;
-      };
-
-      const tick = (now) => {
-        const dt = (now - last) / 1000;
-        last = now;
-        if (!paused) {
-          x += speed * dt;
-          if (x >= half) x -= half;
-          track.style.transform = `translate3d(${-x}px,0,0)`;
-        }
-        raf = requestAnimationFrame(tick);
-      };
-
-      const onEnter = () => (paused = true);
-      const onLeave = () => {
-        paused = false;
-        last = performance.now();
-      };
-
-      container.addEventListener("mouseenter", onEnter);
-      container.addEventListener("mouseleave", onLeave);
-      container.addEventListener("focusin", onEnter);
-      container.addEventListener("focusout", onLeave);
-
-      const onVis = () => {
-        if (document.hidden) paused = true;
-        else {
-          paused = false;
-          last = performance.now();
-        }
-      };
-      document.addEventListener("visibilitychange", onVis);
-
-      const ro = new ResizeObserver(measure);
-      ro.observe(track);
-
-      measure();
-      raf = requestAnimationFrame(tick);
-
-      return () => {
-        cancelAnimationFrame(raf);
-        ro.disconnect();
-        container.removeEventListener("mouseenter", onEnter);
-        container.removeEventListener("mouseleave", onLeave);
-        container.removeEventListener("focusin", onEnter);
-        container.removeEventListener("focusout", onLeave);
-        document.removeEventListener("visibilitychange", onVis);
-      };
+    const setError = (msg) => {
+      projectsGrid.innerHTML = `
+        <div class="project-card error" style="width:420px;">
+          <div class="project-name">Failed to load projects</div>
+          <div class="project-desc">${escapeHtml(msg || "GitHub API rate limit or network error.")}</div>
+        </div>
+      `;
     };
 
     const cardHtml = (r) => {
@@ -238,34 +223,210 @@
       `;
     };
 
-    const setLoading = () => {
-      projectsGrid.innerHTML = `
-        <div class="project-card skeleton" style="width:250px; height:170px;"></div>
-        <div class="project-card skeleton" style="width:250px; height:170px;"></div>
-        <div class="project-card skeleton" style="width:250px; height:170px;"></div>
-      `;
+    const enableMarquee = (container, { speed = 32, idleMs = 900, copies = 3 } = {}) => {
+      if (!container) return () => {};
+      container.classList.add("projects-marquee");
+
+      const cards = Array.from(container.querySelectorAll(".project-card"));
+      if (cards.length <= 1) return () => {};
+
+      const reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+      const autoSpeed = reduceMotion ? 0 : Math.max(0, Number(speed) || 0);
+
+      const track = document.createElement("div");
+      track.className = "projects-track";
+
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < Math.max(2, copies | 0); i++) {
+        for (const c of cards) frag.appendChild(c.cloneNode(true));
+      }
+      track.appendChild(frag);
+      container.replaceChildren(track);
+
+      let raf = 0;
+      let segment = 0;
+      let last = performance.now();
+      let userHolding = false;
+      let lastUser = 0;
+      let ioActive = true;
+      let ro = null;
+      let io = null;
+      let scrollRaf = 0;
+
+      const measure = () => {
+        const total = track.scrollWidth;
+        const c = Math.max(2, copies | 0);
+        const next = total / c;
+        if (!Number.isFinite(next) || next <= 1) return;
+        const prev = segment;
+        segment = next;
+        if (!prev) {
+          container.scrollLeft = segment;
+          return;
+        }
+        const x = container.scrollLeft;
+        const rel = x - prev;
+        container.scrollLeft = segment + rel;
+      };
+
+      const wrap = () => {
+        if (!segment || segment <= 1) return;
+        const x = container.scrollLeft;
+        const min = segment;
+        const max = segment * 2;
+        if (x >= max) container.scrollLeft = x - segment;
+        else if (x < min) container.scrollLeft = x + segment;
+      };
+
+      const onUser = () => {
+        lastUser = performance.now();
+      };
+
+      const onScroll = () => {
+        onUser();
+        if (scrollRaf) cancelAnimationFrame(scrollRaf);
+        scrollRaf = requestAnimationFrame(() => wrap());
+      };
+
+      const onDown = () => {
+        userHolding = true;
+        onUser();
+      };
+
+      const onUp = () => {
+        userHolding = false;
+        onUser();
+        last = performance.now();
+      };
+
+      const tick = (now) => {
+        const dt = Math.min(100, now - last);
+        last = now;
+
+        if (!segment) measure();
+
+        const idle = now - lastUser > idleMs;
+        const autoAllowed = ioActive && !userHolding && idle && autoSpeed > 0;
+
+        if (autoAllowed) container.scrollLeft += (autoSpeed * dt) / 1000;
+        wrap();
+
+        raf = requestAnimationFrame(tick);
+      };
+
+      const onVis = () => {
+        if (document.hidden) {
+          last = performance.now();
+          onUser();
+        } else {
+          last = performance.now();
+          measure();
+          wrap();
+        }
+      };
+
+      container.addEventListener("scroll", onScroll, { passive: true });
+      container.addEventListener("wheel", onUser, { passive: true });
+      container.addEventListener("touchstart", onDown, { passive: true });
+      container.addEventListener("touchend", onUp, { passive: true });
+      container.addEventListener("touchcancel", onUp, { passive: true });
+      container.addEventListener("pointerdown", onDown, { passive: true });
+      window.addEventListener("pointerup", onUp, { passive: true });
+      window.addEventListener("pointercancel", onUp, { passive: true });
+      container.addEventListener("mouseenter", onDown, { passive: true });
+      container.addEventListener("mouseleave", onUp, { passive: true });
+      container.addEventListener("focusin", onDown, { passive: true });
+      container.addEventListener("focusout", onUp, { passive: true });
+      document.addEventListener("visibilitychange", onVis);
+
+      if (window.ResizeObserver) {
+        ro = new ResizeObserver(() => {
+          measure();
+          wrap();
+        });
+        ro.observe(track);
+      }
+
+      if (window.IntersectionObserver) {
+        io = new IntersectionObserver(
+          (entries) => {
+            const e = entries && entries[0];
+            ioActive = !!(e && e.isIntersecting);
+            last = performance.now();
+            if (ioActive) {
+              measure();
+              wrap();
+            }
+          },
+          { threshold: 0.01 }
+        );
+        io.observe(container);
+      }
+
+      requestAnimationFrame(() => {
+        measure();
+        wrap();
+        raf = requestAnimationFrame(tick);
+      });
+
+      return () => {
+        cancelAnimationFrame(raf);
+        if (scrollRaf) cancelAnimationFrame(scrollRaf);
+        ro && ro.disconnect();
+        io && io.disconnect();
+        container.removeEventListener("scroll", onScroll);
+        container.removeEventListener("wheel", onUser);
+        container.removeEventListener("touchstart", onDown);
+        container.removeEventListener("touchend", onUp);
+        container.removeEventListener("touchcancel", onUp);
+        container.removeEventListener("pointerdown", onDown);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onUp);
+        container.removeEventListener("mouseenter", onDown);
+        container.removeEventListener("mouseleave", onUp);
+        container.removeEventListener("focusin", onDown);
+        container.removeEventListener("focusout", onUp);
+        document.removeEventListener("visibilitychange", onVis);
+      };
     };
 
-    const setError = () => {
-      projectsGrid.innerHTML = `
-        <div class="project-card error" style="width:420px;">
-          <div class="project-name">Failed to load projects</div>
-          <div class="project-desc">GitHub API rate limit or network error.</div>
-        </div>
-      `;
-    };
+    const fetchRepos = async ({ force = false, signal } = {}) => {
+      const cached = readCache();
 
-    const fetchRepos = async (opts = {}) => {
-      const force = Boolean(opts.force);
-      const signal = opts.signal;
-      const cached = !force ? readCache() : null;
-      if (cached) return cached;
+      if (!force && cached && Date.now() - cached.ts <= cacheTtlMs) return cached.data;
 
-      const res = await fetch(apiUrl, { headers: { Accept: "application/vnd.github+json" }, cache: "no-store", signal });
-      if (!res.ok) throw new Error("GitHub API error");
-      const data = await res.json();
-      writeCache(data);
-      return data;
+      if (!force && inflight) return inflight;
+
+      const task = (async () => {
+        const headers = { Accept: "application/vnd.github+json" };
+        if (cached && cached.etag) headers["If-None-Match"] = cached.etag;
+
+        try {
+          const res = await fetch(apiUrl, { headers, cache: "no-store", signal });
+
+          if (res.status === 304 && cached && Array.isArray(cached.data)) return cached.data;
+
+          if (!res.ok) {
+            const remaining = res.headers.get("x-ratelimit-remaining");
+            if ((res.status === 403 || res.status === 429) && remaining === "0" && cached && Array.isArray(cached.data)) return cached.data;
+            throw new Error(`GitHub API error (${res.status})`);
+          }
+
+          const data = await res.json();
+          const etag = res.headers.get("etag") || "";
+          writeCache({ ts: Date.now(), etag, data });
+          return data;
+        } catch (e) {
+          if (cached && Array.isArray(cached.data)) return cached.data;
+          throw e;
+        }
+      })();
+
+      inflight = task.finally(() => {
+        inflight = null;
+      });
+
+      return inflight;
     };
 
     const getDeployedRepos = async (opts = {}) => {
@@ -276,10 +437,14 @@
         .sort((a, b) => new Date(b.pushed_at || b.updated_at || 0) - new Date(a.pushed_at || a.updated_at || 0));
     };
 
-    const render = async () => {
+    const render = async ({ force = false } = {}) => {
+      renderAbort && renderAbort.abort();
+      renderAbort = new AbortController();
+
       setLoading();
+
       try {
-        const repos = await fetchRepos();
+        const repos = await fetchRepos({ force, signal: renderAbort.signal });
         const list = repos
           .filter((r) => !r.fork && !r.archived)
           .filter(isDeployed)
@@ -293,7 +458,7 @@
           projectsGrid.addEventListener(
             "click",
             (e) => {
-              const chip = e.target?.closest?.(".chip.link[data-live]");
+              const chip = e.target && e.target.closest && e.target.closest(".chip.link[data-live]");
               if (!chip) return;
               const live = chip.getAttribute("data-live");
               if (!live) return;
@@ -304,10 +469,10 @@
           );
         }
 
-        destroyMarquee?.();
-        destroyMarquee = enableMarquee(projectsGrid, { speed: 30 });
-      } catch {
-        setError();
+        destroyMarquee && destroyMarquee();
+        destroyMarquee = enableMarquee(projectsGrid, { speed: 30, idleMs: 900, copies: 3 });
+      } catch (e) {
+        setError(e && e.message ? e.message : "");
       }
     };
 
