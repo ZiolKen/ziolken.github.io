@@ -7,31 +7,33 @@
 
   const rand = (min, max) => Math.random() * (max - min) + min;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const vp = () => {
+    const vv = window.visualViewport;
+    return {
+      w: Math.floor(vv?.width ?? window.innerWidth),
+      h: Math.floor(vv?.height ?? window.innerHeight),
+    };
+  };
 
-  const layer =
-    document.getElementById("snow-screen") ||
-    (() => {
-      const el = document.createElement("div");
-      el.id = "snow-screen";
-      el.setAttribute("aria-hidden", "true");
-      (document.body || document.documentElement).appendChild(el);
-      return el;
-    })();
+  const layer = document.getElementById("snow-screen") || document.createElement("div");
+  layer.id = "snow-screen";
+  layer.setAttribute("aria-hidden", "true");
+  document.documentElement.appendChild(layer);
 
   Object.assign(layer.style, {
     position: "fixed",
-    top: "0",
-    left: "0",
-    width: "100vw",
-    height: "100vh",
+    inset: "0",
+    width: "100dvw",
+    height: "100dvh",
     pointerEvents: "none",
     overflow: "hidden",
     zIndex: String(Z_INDEX),
+    isolation: "isolate",
   });
 
   const active = new Set();
-  let lastSpawn = performance.now();
   let running = true;
+  let lastSpawn = performance.now();
 
   function kill(item) {
     if (item.dead) return;
@@ -96,16 +98,15 @@
 
     active.add(item);
 
-    const vh = window.innerHeight || 0;
-    const timeToBottom = (vh + 60 - startY) / fallSpeed;
+    const { h } = vp();
+    const timeToBottom = (h + 60 - startY) / fallSpeed;
     const ttl = Math.max(lifetimeCap, timeToBottom);
 
     setTimeout(() => kill(item), Math.ceil(ttl * 1000) + 800);
   }
 
   function animate(now) {
-    const vh = window.innerHeight;
-    const vw = window.innerWidth;
+    const { w: vw, h: vh } = vp();
 
     if (running) {
       const delta = now - lastSpawn;
@@ -146,18 +147,16 @@
     requestAnimationFrame(animate);
   }
 
+  const mql = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+  if (mql?.matches) running = false;
+  mql?.addEventListener?.("change", (e) => (running = !e.matches));
+
   requestAnimationFrame(animate);
 
   window.__snowScreen = {
-    start() {
-      running = true;
-    },
-    stop() {
-      running = false;
-    },
-    clear() {
-      for (const item of [...active]) kill(item);
-    },
+    start() { running = true; },
+    stop() { running = false; },
+    clear() { for (const item of [...active]) kill(item); },
     destroy() {
       running = false;
       for (const item of [...active]) kill(item);
