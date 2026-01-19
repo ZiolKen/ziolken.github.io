@@ -65,22 +65,22 @@
       const style = document.createElement("style");
       style.id = "ziolken-runtime-css";
       style.textContent = `
-#projects-grid.projects-marquee{
-  overflow-x:auto!important;
-  overflow-y:hidden!important;
-  -webkit-overflow-scrolling:touch;
-  overscroll-behavior-x:contain;
-  touch-action:pan-x;
-  scrollbar-width:none;
-}
-#projects-grid.projects-marquee::-webkit-scrollbar{display:none}
-.projects-track{
-  display:flex;
-  flex-wrap:nowrap;
-  align-items:stretch;
-  width:max-content;
-}
-.projects-track>.project-card{flex:0 0 auto}
+        #projects-grid.projects-marquee{
+          overflow-x:auto!important;
+          overflow-y:hidden!important;
+          -webkit-overflow-scrolling:touch;
+          overscroll-behavior-x:contain;
+          touch-action:pan-x;
+          scrollbar-width:none;
+        }
+        #projects-grid.projects-marquee::-webkit-scrollbar{display:none}
+        .projects-track{
+          display:flex;
+          flex-wrap:nowrap;
+          align-items:stretch;
+          width:max-content;
+        }
+        .projects-track>.project-card{flex:0 0 auto}
       `.trim();
       document.head.appendChild(style);
     };
@@ -226,105 +226,124 @@
     const enableMarquee = (container, { speed = 32, idleMs = 900, copies = 3 } = {}) => {
       if (!container) return () => {};
       container.classList.add("projects-marquee");
-
+    
       const cards = Array.from(container.querySelectorAll(".project-card"));
       if (cards.length <= 1) return () => {};
-
+    
       const reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
       const autoSpeed = reduceMotion ? 0 : Math.max(0, Number(speed) || 0);
-
+    
       const track = document.createElement("div");
       track.className = "projects-track";
-
+    
       const frag = document.createDocumentFragment();
-      for (let i = 0; i < Math.max(2, copies | 0); i++) {
-        for (const c of cards) frag.appendChild(c.cloneNode(true));
-      }
+      const c = Math.max(3, copies | 0);
+      for (let i = 0; i < c; i++) for (const card of cards) frag.appendChild(card.cloneNode(true));
       track.appendChild(frag);
+    
       container.replaceChildren(track);
-
+    
       let raf = 0;
-      let segment = 0;
-      let last = performance.now();
-      let userHolding = false;
-      let lastUser = 0;
-      let ioActive = true;
       let ro = null;
       let io = null;
+    
+      let segment = 0;
+      let pos = 0;
+      let last = performance.now();
+    
+      let userHolding = false;
+      let lastUser = 0;
+    
+      let ioActive = true;
+    
       let scrollRaf = 0;
-
+      let lastProgrammatic = 0;
+    
+      const setPos = (p) => {
+        if (!segment) return;
+    
+        if (p >= segment * 2) p -= segment;
+        else if (p < segment) p += segment;
+    
+        pos = p;
+    
+        const base = Math.floor(pos);
+        const frac = pos - base;
+    
+        lastProgrammatic = performance.now();
+        container.scrollLeft = base;
+    
+        if (frac) track.style.transform = `translate3d(${-frac}px,0,0)`;
+        else track.style.transform = "translate3d(0,0,0)";
+      };
+    
       const measure = () => {
         const total = track.scrollWidth;
-        const c = Math.max(2, copies | 0);
         const next = total / c;
         if (!Number.isFinite(next) || next <= 1) return;
-        const prev = segment;
         segment = next;
-        if (!prev) {
-          container.scrollLeft = segment;
-          return;
+        if (!pos) {
+          pos = segment;
+          setPos(pos);
+        } else {
+          setPos(pos);
         }
-        const x = container.scrollLeft;
-        const rel = x - prev;
-        container.scrollLeft = segment + rel;
       };
-
-      const wrap = () => {
-        if (!segment || segment <= 1) return;
-        const x = container.scrollLeft;
-        const min = segment;
-        const max = segment * 2;
-        if (x >= max) container.scrollLeft = x - segment;
-        else if (x < min) container.scrollLeft = x + segment;
-      };
-
+    
       const onUser = () => {
         lastUser = performance.now();
+        if (track.style.transform) track.style.transform = "translate3d(0,0,0)";
+        pos = container.scrollLeft;
       };
-
+    
       const onScroll = () => {
+        const now = performance.now();
+        if (now - lastProgrammatic < 40) return;
+    
         onUser();
+    
         if (scrollRaf) cancelAnimationFrame(scrollRaf);
-        scrollRaf = requestAnimationFrame(() => wrap());
+        scrollRaf = requestAnimationFrame(() => {
+          if (!segment) measure();
+          if (!segment) return;
+          setPos(container.scrollLeft);
+        });
       };
-
+    
       const onDown = () => {
         userHolding = true;
         onUser();
       };
-
+    
       const onUp = () => {
         userHolding = false;
         onUser();
         last = performance.now();
       };
-
-      const tick = (now) => {
-        const dt = Math.min(100, now - last);
-        last = now;
-
-        if (!segment) measure();
-
-        const idle = now - lastUser > idleMs;
-        const autoAllowed = ioActive && !userHolding && idle && autoSpeed > 0;
-
-        if (autoAllowed) container.scrollLeft += (autoSpeed * dt) / 1000;
-        wrap();
-
-        raf = requestAnimationFrame(tick);
-      };
-
+    
       const onVis = () => {
-        if (document.hidden) {
-          last = performance.now();
-          onUser();
-        } else {
-          last = performance.now();
+        last = performance.now();
+        onUser();
+        if (!document.hidden) {
           measure();
-          wrap();
+          if (segment) setPos(pos || segment);
         }
       };
-
+    
+      const tick = (now) => {
+        const dt = Math.min(50, now - last);
+        last = now;
+    
+        if (!segment) measure();
+    
+        const idle = now - lastUser > idleMs;
+        const autoAllowed = ioActive && !userHolding && idle && autoSpeed > 0 && segment > 1;
+    
+        if (autoAllowed) setPos(pos + (autoSpeed * dt) / 1000);
+    
+        raf = requestAnimationFrame(tick);
+      };
+    
       container.addEventListener("scroll", onScroll, { passive: true });
       container.addEventListener("wheel", onUser, { passive: true });
       container.addEventListener("touchstart", onDown, { passive: true });
@@ -338,15 +357,15 @@
       container.addEventListener("focusin", onDown, { passive: true });
       container.addEventListener("focusout", onUp, { passive: true });
       document.addEventListener("visibilitychange", onVis);
-
+    
       if (window.ResizeObserver) {
         ro = new ResizeObserver(() => {
           measure();
-          wrap();
+          if (segment) setPos(pos || segment);
         });
         ro.observe(track);
       }
-
+    
       if (window.IntersectionObserver) {
         io = new IntersectionObserver(
           (entries) => {
@@ -355,25 +374,27 @@
             last = performance.now();
             if (ioActive) {
               measure();
-              wrap();
+              if (segment) setPos(pos || segment);
             }
           },
           { threshold: 0.01 }
         );
         io.observe(container);
       }
-
+    
       requestAnimationFrame(() => {
         measure();
-        wrap();
+        if (segment) setPos(segment);
+        last = performance.now();
         raf = requestAnimationFrame(tick);
       });
-
+    
       return () => {
         cancelAnimationFrame(raf);
         if (scrollRaf) cancelAnimationFrame(scrollRaf);
         ro && ro.disconnect();
         io && io.disconnect();
+    
         container.removeEventListener("scroll", onScroll);
         container.removeEventListener("wheel", onUser);
         container.removeEventListener("touchstart", onDown);
