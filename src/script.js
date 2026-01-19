@@ -258,7 +258,7 @@
       let scrollRaf = 0;
       let lastProgrammatic = 0;
     
-      const isCard = (el) => !!(el && el.closest && el.closest(".project-card"));
+      const isCard = (el) => container.contains(el);
     
       const setPos = (p) => {
         if (!segment) return;
