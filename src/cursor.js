@@ -34,7 +34,7 @@
     const el = document.createElement("span");
     el.textContent = EMOJI;
 
-    const size = rand(10, 20);
+    const size = rand(5, 15);
     const opacity = rand(0.75, 1);
     const spinDir = Math.random() < 0.5 ? -1 : 1;
     const spinSpeed = rand(90, 360) * spinDir;
@@ -43,9 +43,9 @@
     const startY = y + rand(-2, 2);
 
     const fallSpeed = rand(50, 150);
-    const driftAmplitude = rand(5, 10);
-    const driftFreq = rand(0.5, 1.5);
-    const wind = rand(-2, 2);
+    const driftAmplitude = rand(1, 5);
+    const driftFreq = rand(0.3, 1.7);
+    const wind = rand(-1, 1);
 
     const lifetimeCap = rand(5.0, 7.5);
 
@@ -100,7 +100,7 @@
       const y = item.startY + item.fallSpeed * t;
 
       const drift =
-        Math.sin(t * Math.PI * 2 * item.driftFreq) * item.driftAmplitude +
+        Math.sin(t * Math.PI * 1 * item.driftFreq) * item.driftAmplitude +
         item.wind * t;
 
       const x = item.startX + drift;
