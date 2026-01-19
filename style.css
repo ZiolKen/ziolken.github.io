@@ -18,7 +18,9 @@
   --heart-red: #ff4757;
 }
 
+
 * {
+  cursor: url(res/cursor.gif) 16 16, auto !important;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -29,6 +31,28 @@
   outline: none !important;
 }
 
+@font-face {
+  font-family: 'Chillax';
+  src: url('fonts/chillax.ttf') format('truetype');
+  font-weight: 500;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Terminus';
+  src: url('fonts/Terminus.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Minecraftia';
+  src: url('fonts/Minecraftia-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 body,
 html {
   overscroll-behavior-y: none;
@@ -37,7 +61,10 @@ html {
 
 html {
   scrollbar-width: thin;
-  background: linear-gradient(135deg, rgb(6,6,17), rgb(1, 1, 14));
+  background: url(res/bg.png);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
   min-height: 100dvh;
 }
 
@@ -127,6 +154,7 @@ textarea {
 }
 
 .profile-card {
+  font-family: 'Chillax', monospace;
   position: relative;
   overflow: hidden;
   background: var(--card-bg);
@@ -138,6 +166,7 @@ textarea {
 }
 
 .section-card {
+  font-family: 'Chillax', monospace;
   background: var(--card-bg);
   backdrop-filter: blur(10px);
   border: 1px solid var(--border-card);
@@ -379,6 +408,7 @@ textarea {
 }
 
 #about-me-card {
+  font-family: 'Minecraftia', monospace;
   height: 375px;
   max-height: 375px;
   overflow: hidden;
@@ -535,6 +565,7 @@ textarea {
 }
 
 .terminal {
+  font-family: 'Terminus', monospace;
   border: 1px solid var(--border-card);
   border-radius: 12px;
   min-height: 0;
@@ -542,7 +573,7 @@ textarea {
   background: rgba(10, 12, 18, 0.6);
   display: flex;
   flex-direction: column;
-  height: 290px;
+  height: 280px;
 }
 
 .terminal:hover {border-color:rgba(139,148,158,.35)}
@@ -766,11 +797,20 @@ textarea {
   .lay-container {
     right: 5%;
   }
+  #about-me-card {
+    height: 400px;
+    max-height: 400px;
+  }
 }
 
 @media (max-width: 900px) {
   .lay-container {
     right: 1%;
+  }
+  
+  #about-me-card {
+    height: 400px;
+    max-height: 400px;
   }
 
   .main-grid {
