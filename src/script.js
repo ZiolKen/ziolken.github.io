@@ -229,9 +229,8 @@
     
       const cards = Array.from(container.querySelectorAll(".project-card"));
       if (cards.length <= 1) return () => {};
-    
-      const reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-      const autoSpeed = reduceMotion ? 0 : Math.max(0, Number(speed) || 0);
+
+      const autoSpeed = Math.max(0, Number(speed) || 0);
     
       const track = document.createElement("div");
       track.className = "projects-track";
