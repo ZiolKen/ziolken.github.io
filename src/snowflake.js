@@ -147,8 +147,6 @@
     requestAnimationFrame(animate);
   }
 
-  mql?.addEventListener?.("change", (e) => (running = !e.matches));
-
   requestAnimationFrame(animate);
 
   window.__snowScreen = {
