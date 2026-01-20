@@ -147,8 +147,6 @@
     requestAnimationFrame(animate);
   }
 
-  const mql = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-  if (mql?.matches) running = false;
   mql?.addEventListener?.("change", (e) => (running = !e.matches));
 
   requestAnimationFrame(animate);
