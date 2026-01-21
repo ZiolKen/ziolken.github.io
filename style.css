@@ -374,6 +374,16 @@ textarea {
   transform: translateY(0.5px);
 }
 
+.device-icon {
+    opacity: 1;
+    fill: var(--text-main);
+}
+ 
+.devices .device-icon {
+    width: 18px;
+    height: 18px;
+}
+
 .custom-status {
   color: var(--text-main);
   font-size: 14px;
