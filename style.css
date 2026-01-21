@@ -559,11 +559,68 @@ textarea {
 }
 
 .love-text {
-  color: var(--heart-red);
-  text-shadow: 0 0 5px rgba(199, 16, 31, 0.5);
-  font-weight: 500;
-  position: relative;
-  display: inline-block;
+    color: var(--heart-red);
+    text-shadow: 0 0 5px rgba(199, 16, 31, 0.5);
+    font-weight: 500;
+    position: relative;
+    display: inline-block;
+    cursor: default;
+}
+ 
+.love-text::before,
+.love-text::after {
+    content: '<3';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--heart-red);
+    font-size: 10px;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+ 
+.love-text::before {
+    animation: float-heart-1 2s infinite linear;
+}
+ 
+.love-text::after {
+    font-size: 14px;
+    animation: float-heart-2 2s infinite linear;
+    animation-delay: 1s;
+}
+
+@keyframes float-heart-1 {
+    0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0;
+    }
+ 
+    20% {
+        opacity: 1;
+    }
+ 
+    100% {
+        transform: translate(-80%, -250%) scale(1.2) rotate(-15deg);
+        opacity: 0;
+    }
+}
+ 
+@keyframes float-heart-2 {
+    0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0;
+    }
+ 
+    20% {
+        opacity: 1;
+    }
+ 
+    100% {
+        transform: translate(20%, -220%) scale(1) rotate(15deg);
+        opacity: 0;
+    }
 }
 
 .stamp-grid {
