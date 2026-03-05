@@ -1233,10 +1233,7 @@ textarea {
 .music-btn-main svg{
   width:12px;
   height:12px;
-  justify-content:center;
-  align-items:center;
-  text-align:center;
-  vertical-align: middle
+  justify-content:center
 }
 
 #projects-grid {
@@ -1571,5 +1568,5 @@ textarea {
 .icon-play, .icon-pause{
   width: 30px;
   height: 30px;
-  display: block
+  display: flex
 }
