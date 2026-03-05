@@ -1230,7 +1230,7 @@ textarea {
 .music-btn-main{width:45px;height:45px}
 
 .music-btn svg{width:20px;height:20px}
-.music-btn-main svg{width:25px;height:25px;align-items:center;justify-content:center}
+.music-btn-main svg{width:30px;height:30px}
 
 #projects-grid {
   display: flex;
