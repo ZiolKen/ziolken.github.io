@@ -1230,7 +1230,7 @@ textarea {
 .music-btn-main{width:45px;height:45px}
 
 .music-btn svg{width:20px;height:20px}
-.music-btn-main svg{width:30px;height:30px}
+.music-btn-main svg{width:25px;height:25px;align-items:center;justify-content:center}
 
 #projects-grid {
   display: flex;
@@ -1559,4 +1559,9 @@ textarea {
   overflow: hidden;
   z-index: 999999;
   isolation: isolate;
+}
+
+.icon-play, .icon-pause{
+  width: 30px;
+  height: 30px;
 }
