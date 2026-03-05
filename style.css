@@ -1197,7 +1197,7 @@ textarea {
 .music-btn-main:hover{background:#fff;color:#0b0f14}
 .music-btn-main .icon-pause{display:none}
 .music-card.is-playing .music-btn-main .icon-play{display:none}
-.music-card.is-playing .music-btn-main .icon-pause{display:inline}
+.music-card.is-playing .music-btn-main .icon-pause{display:flex}
 
 @media (max-width: 900px){
   .music-title{font-size:38px}
