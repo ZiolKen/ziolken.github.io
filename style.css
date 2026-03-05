@@ -1359,6 +1359,7 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  min-width: 200px;
 }
 
 .project-metrics {
