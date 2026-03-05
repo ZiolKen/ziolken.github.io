@@ -1571,4 +1571,5 @@ textarea {
 .icon-play, .icon-pause{
   width: 30px;
   height: 30px;
+  display: flex
 }
