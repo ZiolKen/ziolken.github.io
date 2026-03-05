@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const TITLES = ["@ziolken ~ portfolio", "root@ziolken $ about", ">_ print('Hello World')"];
+  const TITLES = ["@ziolken ~ portfolio", "root@ziolken: $ about", ">_ print('Hello World')"];
   const CURSOR = "▌";
   const BLANK = "\u00A0";
 
