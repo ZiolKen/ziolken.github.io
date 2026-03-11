@@ -36,6 +36,7 @@
 
   const tracks = [
     { title: "Bloody Moon", artist: "Unknown", src: "assets/bloody_moon.mp3", cover: "res/music.png" },
+    { title: "Empire", artist: "Ogryzek", src: "assets/empire.mp3", cover: "res/empire.jpeg" },
   ];
 
   const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
