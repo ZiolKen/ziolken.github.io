@@ -35,7 +35,7 @@
   const bars = Array.from(elMute.querySelectorAll(".mvb"));
 
   const tracks = [
-    { title: "Bloody Moon", artist: "Unknown", src: "assets/bloody_moon.mp3", cover: "res/music.png" },
+    { title: "Bloody Moon", artist: "quotam.", src: "assets/bloody_moon.mp3", cover: "res/music.png" },
     { title: "Empire", artist: "Ogryzek", src: "assets/empire.mp3", cover: "res/empire.jpeg" },
   ];
 
