@@ -1266,8 +1266,8 @@ textarea {
   
   .music-btn{width:65px;height:65px}
   .music-btn-main{width:70px;height:70px}
-  .music-btn svg{width:45px;height:45px}
-  .music-btn-main svg{width:37px;height:37px}
+  .music-btn svg{width:30px;height:30px}
+  .music-btn-main svg{width:25px;height:25px}
 }
 
 @media (max-width: 620px){
