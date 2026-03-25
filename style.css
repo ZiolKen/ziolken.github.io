@@ -946,23 +946,6 @@ textarea {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  ::before,
-  ::after {
-    animation-duration: 0s !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0s !important;
-    scroll-behavior: auto !important;
-  }
-
-  .profile-card,
-  .section-card {
-    backdrop-filter: none !important;
-    background: var(--card-bg-solid) !important;
-  }
-}
-
 #terminal,
 [data-terminal] {
   --term-bg: #0b0f14;
@@ -1213,77 +1196,52 @@ textarea {
 
 @media (min-width: 621px) and (max-width: 899px){
   .music-card{
-    height:auto;
-    min-height:228px;
-    padding:16px;
-    gap:14px;
     display:grid;
-    grid-template-columns: 132px minmax(0, 1fr);
+    grid-template-columns: 140px 1fr;
     grid-template-areas:
       "cover meta"
       "progress progress"
       "controls controls";
-    align-items:start;
+    height:auto;
+    align-items:stretch;
   }
+
   .music-cover{
-    grid-area:cover;
     height:100%;
-    min-height:168px;
-    border-radius:14px;
+    min-height:160px;
   }
+
   .music-meta{
-    grid-area:meta;
-    padding-top:2px;
-    min-width:0;
-  }
-  .music-title{
-    font-size:28px;
-  }
-  .music-artist{
-    font-size:14px;
-  }
-  .music-progress{
-    grid-area:progress;
-    margin-top:0;
-  }
-  .music-controls{
-    grid-area:controls;
-    margin-top:0;
+    display:flex;
+    flex-direction:column;
     justify-content:center;
   }
 }
 
 @media (min-width: 900px){
   .music-card{
+    display:grid;
+    grid-template-columns: 160px 1fr;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      "cover meta"
+      "cover progress"
+      "cover controls";
+
     height:auto;
     min-height:295px;
-    padding:16px;
-    gap:16px;
-    display:grid;
-    grid-template-columns: 150px minmax(0, 1fr);
-    grid-template-areas: "cover meta";
-    align-items:stretch;
   }
+
   .music-cover{
     grid-area:cover;
-    height:auto;
-    min-height:100%;
-    border-radius:16px;
+    height:100%;
   }
-  .music-meta{
-    grid-area:meta;
-    min-width:0;
-    gap:10px;
-  }
-  .music-title{
-    font-size:clamp(28px, 3.2vw, 38px);
-    line-height:1.05;
-  }
-  .music-artist{
-    font-size:clamp(14px, 1.4vw, 18px);
-  }
-  .music-progress{
-    margin-top:6px;
+
+  .music-meta{ grid-area:meta; }
+  .music-progress{ grid-area:progress; }
+  .music-controls{
+    grid-area:controls;
+    justify-content:flex-start;
   }
 }
 
@@ -1291,7 +1249,8 @@ textarea {
   .music-card{
     padding:14px;
     gap:10px;
-    height:295px;
+    height:auto;
+    min-height:260px;
     display:flex;
     flex-direction:column;
   }
