@@ -1036,24 +1036,29 @@ textarea {
   touch-action: pan-y;
 }
 
+.music-panel {
+  container-type: inline-size;
+  container-name: music-panel;
+}
+
 .music-card{
   position:relative;
   overflow:hidden;
-  height:295px;
   border-radius:12px;
   border:1px solid var(--border-card);
   background:var(--card-bg);
   backdrop-filter:blur(10px);
-  padding:16px;
+  padding:14px;
   display:flex;
   flex-direction:column;
-  gap:14px
+  gap:10px;
+  height:295px;
 }
 .music-card:hover{border-color:rgba(139,148,158,.35)}
 .music-cover{
   position:relative;
-  height:150px;
-  border-radius:16px;
+  height:120px;
+  border-radius:14px;
   overflow:hidden;
   background:rgba(0,0,0,.35)
 }
@@ -1102,20 +1107,20 @@ textarea {
 .music-meta{
   display:flex;
   flex-direction:column;
-  gap:10px;
+  gap:8px;
   min-height:0
 }
 .music-title{
-  font-size:44px;
+  font-size:28px;
   font-weight:650;
-  line-height:1.05;
+  line-height:1.1;
   letter-spacing:-.02em;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis
 }
 .music-artist{
-  font-size:22px;
+  font-size:14px;
   color:var(--text-secondary);
   margin-top:-2px;
   white-space:nowrap;
@@ -1125,8 +1130,8 @@ textarea {
 
 .music-progress{
   position:relative;
-  height:18px;
-  margin-top:6px;
+  height:14px;
+  margin-top:2px;
   cursor:pointer;
   outline:none
 }
@@ -1171,7 +1176,7 @@ textarea {
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:18px
+  gap:14px
 }
 .music-btn{
   border:none;
@@ -1181,16 +1186,16 @@ textarea {
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  width:44px;
-  height:44px;
+  width:40px;
+  height:40px;
   border-radius:999px;
   transition:transform .12s ease, color .15s ease, background-color .15s ease
 }
 .music-btn:hover{color:rgba(230,237,243,.9);background:rgba(25,31,41,.25)}
 .music-btn:active{transform:scale(.98)}
 .music-btn-main{
-  width:76px;
-  height:76px;
+  width:45px;
+  height:45px;
   background:#fff;
   color:#0b0f14
 }
@@ -1199,41 +1204,105 @@ textarea {
 .music-card.is-playing .music-btn-main .icon-play{display:none}
 .music-card.is-playing .music-btn-main .icon-pause{display:flex}
 
-@media (max-width: 900px){
-  .music-title{font-size:38px}
-  .music-artist{font-size:18px}
-}
-@media (prefers-reduced-motion: reduce){
-  .mvb{transition:none}
-  .music-btn{transition:none}
-}
-
-.music-card{padding:14px;gap:10px;height:295px;overflow:hidden}
-.music-cover{height:120px;border-radius:14px}
-.music-meta{gap:8px}
-
-.music-title{
-  font-size:28px;
-  line-height:1.1;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis
-}
-.music-artist{font-size:14px}
-
-.music-progress{height:14px;margin-top:2px}
-.music-progress::before{height:2px}
-.music-progress-fill{height:2px}
-
-.music-controls{gap:14px}
-.music-btn{width:40px;height:40px}
-.music-btn-main{width:45px;height:45px}
-
 .music-btn svg{width:20px;height:20px}
 .music-btn-main svg{
   width:12px;
   height:12px;
   display:block
+}
+
+@media (min-width: 621px) and (max-width: 899px){
+  .music-card{
+    height:auto;
+    min-height:228px;
+    padding:16px;
+    gap:14px;
+    display:grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    grid-template-areas:
+      "cover meta"
+      "progress progress"
+      "controls controls";
+    align-items:start;
+  }
+  .music-cover{
+    grid-area:cover;
+    height:100%;
+    min-height:168px;
+    border-radius:14px;
+  }
+  .music-meta{
+    grid-area:meta;
+    padding-top:2px;
+    min-width:0;
+  }
+  .music-title{
+    font-size:28px;
+  }
+  .music-artist{
+    font-size:14px;
+  }
+  .music-progress{
+    grid-area:progress;
+    margin-top:0;
+  }
+  .music-controls{
+    grid-area:controls;
+    margin-top:0;
+    justify-content:center;
+  }
+}
+
+@media (min-width: 900px){
+  .music-card{
+    height:auto;
+    min-height:295px;
+    padding:16px;
+    gap:16px;
+    display:grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    grid-template-areas: "cover meta";
+    align-items:stretch;
+  }
+  .music-cover{
+    grid-area:cover;
+    height:auto;
+    min-height:100%;
+    border-radius:16px;
+  }
+  .music-meta{
+    grid-area:meta;
+    min-width:0;
+    gap:10px;
+  }
+  .music-title{
+    font-size:clamp(28px, 3.2vw, 38px);
+    line-height:1.05;
+  }
+  .music-artist{
+    font-size:clamp(14px, 1.4vw, 18px);
+  }
+  .music-progress{
+    margin-top:6px;
+  }
+}
+
+@media (max-width: 620px){
+  .music-card{
+    padding:14px;
+    gap:10px;
+    height:295px;
+    display:flex;
+    flex-direction:column;
+  }
+  .music-cover{height:120px;border-radius:14px}
+  .music-meta{gap:8px}
+  .music-progress{height:14px;margin-top:2px}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .mvb{transition:none}
+  .music-btn{transition:none}
 }
 
 #projects-grid {
