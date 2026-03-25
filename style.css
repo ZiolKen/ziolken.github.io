@@ -1080,8 +1080,8 @@ textarea {
 
 .music-vol{
   position:absolute;
-  right:12px;
-  bottom:12px;
+  right:5px;
+  bottom:5px;
   z-index:2;
   border:none;
   background:transparent;
@@ -1300,11 +1300,6 @@ textarea {
   .music-progress{height:14px;margin-top:2px}
 }
 
-@media (prefers-reduced-motion: reduce){
-  .mvb{transition:none}
-  .music-btn{transition:none}
-}
-
 #projects-grid {
   display: flex;
   gap: 18px;
@@ -1341,21 +1336,6 @@ textarea {
 #projects-grid.projects-marquee::after {
   right: 0;
   background: linear-gradient(270deg, rgba(0,0,0,0.85), rgba(0,0,0,0));
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #projects-grid.projects-marquee {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x mandatory;
-  }
-  #projects-grid .projects-track {
-    transform: none !important;
-  }
-  #projects-grid.projects-marquee::before,
-  #projects-grid.projects-marquee::after {
-    display: none;
-  }
 }
 
 .project-card {
