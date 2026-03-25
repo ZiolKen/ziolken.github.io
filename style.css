@@ -1249,12 +1249,12 @@ textarea {
   }
 
   .music-title{
-    font-size:clamp(24px, 2.4vw, 34px);
+    font-size:clamp(32px, 2.6vw, 36px);
     line-height:1.05;
   }
 
   .music-artist{
-    font-size:clamp(13px, 1.15vw, 16px);
+    font-size:clamp(16px, 1.45vw, 20px);
   }
 
   .music-progress{
@@ -1264,8 +1264,9 @@ textarea {
 
   .music-controls{
     margin-top:0;
-    justify-content:flex-start;
+    justify-content:center;
     padding-top:2px;
+    margin-bottom:15px;
   }
 }
 
