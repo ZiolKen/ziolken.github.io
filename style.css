@@ -1222,34 +1222,50 @@ textarea {
 
 @media (min-width: 900px){
   .music-card{
-    display:grid;
-    grid-template-columns: 160px 1fr;
-    grid-template-rows: auto auto 1fr;
-    grid-template-areas:
-      "cover meta"
-      "cover progress"
-      "cover controls";
-
     height:auto;
     min-height:295px;
+    padding:16px;
+    gap:16px;
+    display:grid;
+    grid-template-columns: 176px minmax(0, 1fr);
+    grid-template-areas: "cover meta";
+    align-items:stretch;
   }
 
   .music-cover{
     grid-area:cover;
     height:100%;
+    min-height:0;
+    border-radius:16px;
   }
-  
-  .music-title{font-size:32px}
-  .music-artist{font-size:18px}
-  .music-controls{align-items:center;justify-content:center}
-  .music-btn{width:45px;height:45px}
-  .music-btn-main{width:50px;height:50px}
 
-  .music-meta{ grid-area:meta; }
-  .music-progress{ grid-area:progress; }
+  .music-meta{
+    grid-area:meta;
+    min-width:0;
+    gap:8px;
+    display:grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    align-content:stretch;
+  }
+
+  .music-title{
+    font-size:clamp(24px, 2.4vw, 34px);
+    line-height:1.05;
+  }
+
+  .music-artist{
+    font-size:clamp(13px, 1.15vw, 16px);
+  }
+
+  .music-progress{
+    margin-top:0;
+    align-self:center;
+  }
+
   .music-controls{
-    grid-area:controls;
+    margin-top:0;
     justify-content:flex-start;
+    padding-top:2px;
   }
 }
 
