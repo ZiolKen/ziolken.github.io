@@ -1,3 +1,5 @@
+window.scrollTo(0, 0);
+
 let socket = null;
 let heartbeat = null;
 let connectionFailures = 0;
