@@ -1249,12 +1249,12 @@ textarea {
   }
 
   .music-title{
-    font-size:clamp(32px, 2.6vw, 36px);
+    font-size:clamp(32px, 2.6vw, 40px);
     line-height:1.05;
   }
 
   .music-artist{
-    font-size:clamp(16px, 1.45vw, 20px);
+    font-size:clamp(16px, 1.45vw, 24px);
   }
 
   .music-controls{
@@ -1267,7 +1267,9 @@ textarea {
   .music-btn{width:65px;height:65px}
   .music-btn-main{width:70px;height:70px}
   .music-btn svg{width:30px;height:30px}
-  .music-btn-main svg{width:25px;height:25px}
+  .music-btn-main svg{width:22px;height:22px}
+  .music-progress{width:12px}
+  .music-progress-knob{width:14px;height:14px}
 }
 
 @media (max-width: 620px){
