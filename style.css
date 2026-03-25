@@ -1238,6 +1238,12 @@ textarea {
     grid-area:cover;
     height:100%;
   }
+  
+  .music-title{font-size:32px}
+  .music-artist{font-size:18px}
+  .music-controls{align-items:center;justify-content:center}
+  .music-btn{width:45px;height:45px}
+  .music-btn-main{width:50px;height:50px}
 
   .music-meta{ grid-area:meta; }
   .music-progress{ grid-area:progress; }
