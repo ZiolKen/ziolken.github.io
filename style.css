@@ -1257,17 +1257,15 @@ textarea {
     font-size:clamp(16px, 1.45vw, 20px);
   }
 
-  .music-progress{
-    margin-top:0;
-    align-self:center;
-  }
-
   .music-controls{
     margin-top:0;
     justify-content:center;
     padding-top:2px;
     margin-bottom:15px;
   }
+  
+  .music-btn{width:45px;height:45px}
+  .music-btn-main{width:50px;height:50px}
 }
 
 @media (max-width: 620px){
