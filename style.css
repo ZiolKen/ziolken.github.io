@@ -1264,8 +1264,10 @@ textarea {
     margin-bottom:15px;
   }
   
-  .music-btn{width:75px;height:75px}
-  .music-btn-main{width:80px;height:80px}
+  .music-btn{width:65px;height:65px}
+  .music-btn-main{width:70px;height:70px}
+  .music-btn svg{width:45px;height:45px}
+  .music-btn-main svg{width:37px;height:37px}
 }
 
 @media (max-width: 620px){
