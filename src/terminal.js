@@ -873,7 +873,7 @@
       usage: "contact",
       run: async () => {
         const tg = makeSafeLink("https://t.me/ZiolKen", "Telegram: @ZiolKen");
-        const em = makeSafeLink("mailto:zknisme@gmail.com", "Email: zknisme@gmail.com");
+        const em = makeSafeLink("mailto:contact@ziolken.qzz.io", "Email: contact@ziolken.qzz.io");
         const dc = makeSafeLink("https://discord.com/users/951037699320602674", "Discord: @ziolken");
         term.println("Contact:", "term-muted");
         if (tg) term.printNode(tg, "term-muted"); else term.println("Telegram: @ZiolKen", "term-muted");
