@@ -877,7 +877,7 @@
         const dc = makeSafeLink("https://discord.com/users/951037699320602674", "Discord: @ziolken");
         term.println("Contact:", "term-muted");
         if (tg) term.printNode(tg, "term-muted"); else term.println("Telegram: @ZiolKen", "term-muted");
-        if (em) term.printNode(em, "term-muted"); else term.println("Email: zknisme@gmail.com", "term-muted");
+        if (em) term.printNode(em, "term-muted"); else term.println("Email: contact@ziolken.qzz.io", "term-muted");
         if (dc) term.printNode(dc, "term-muted"); else term.println("Discord: @ziolken", "term-muted");
       },
     });
